@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Trusted Notifications Prototype - Bank</title>
+    <style>
+        
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: white;
+            padding: 15px;
+            border: 1px solid #ccc;
+        }
+
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+
+        .menu {
+            margin-bottom: 15px;
+        }
+
+        .menu button {
+            margin-right: 5px;
+            padding: 5px 10px;
+        }
+
+        .section {
+            display: none;
+            border-top: 1px solid #ccc;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        label {
+            display: block;
+            margin-top: 8px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 5px;
+            margin-top: 3px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid #999;
+        }
+
+        th, td {
+            padding: 5px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .small-text {
+            font-size: 12px;
+            color: #555;
+        }
+
+        .notification-list {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 5px;
+            margin-top: 10px;
+        }
+
+        .notification-item {
+            border-bottom: 1px solid #ddd;
+            padding: 4px;
+            cursor: pointer;
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item:hover {
+            background-color: #f6f6f6;
+        }
+
+        .notification-detail {
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin-top: 10px;
+            min-height: 80px;
+            background-color: #fafafa;
+        }
+
+        .log-box {
+            margin-top: 10px;
+            padding: 6px;
+            border: 1px dashed #999;
+            background-color: #fafafa;
+            font-size: 12px;
+            min-height: 30px;
+        }
+
+        .button-small {
+            padding: 3px 8px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Bank - Trusted Notifications (Simple Prototype)</h1>
+
+
+    <!--  Menu -->
+    <div class="menu">
+        <button onclick="showSection('adminSection')">1. Admin - Configure Events</button>
+        <button onclick="showSection('simulateSection')">2. Simulate Events</button>
+        <button onclick="showSection('customerSection')">3. Customer Notifications</button>
+    </div>
+
+    <!-- ADMIN SECTION -->
+    <div id="adminSection" class="section active">
+        <h2>Admin - Configure Notification Events</h2>
+        <p class="small-text">
+            Here the bank admin can define events and decide which channels will be used.
+        </p>
+
+        <form onsubmit="addOrUpdateEvent(); return false;">
+            <label>
+                Event Name:
+                <input type="text" id="eventName" placeholder="Example: Login OTP, High Value Debit" required>
+            </label>
+
+            <label>
+                Priority:
+                <select id="priority">
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </label>
+
+            <label>
+                Risk Level:
+                <select id="riskLevel">
+                    <option value="High">High</option>
+                    <option value="Low">Low</option>
+                </select>
+            </label>
+
+            <label>
+                Primary Channel:
+                <select id="primaryChannel">
+                    <option value="SMS">SMS</option>
+                    <option value="PUSH">App Push</option>
+                    <option value="EMAIL">Email</option>
+                    <option value="INAPP">In-App Only</option>
+                </select>
+            </label>
+
+            <label>
+                Secondary Channel (fallback):
+                <select id="secondaryChannel">
+                    <option value="">None</option>
+                    <option value="SMS">SMS</option>
+                    <option value="PUSH">App Push</option>
+                    <option value="EMAIL">Email</option>
+                    <option value="INAPP">In-App</option>
+                </select>
+            </label>
+
+            <label>
+                Retry After (seconds):
+                <input type="text" id="retrySeconds" placeholder="Example: 30">
+            </label>
+
+            <br>
+            <button type="submit">Save Event</button>
+        </form>
+
+        <h3>Configured Events</h3>
+        <table id="eventsTable">
+            <thead>
+                <tr>
+                    <th>Event Name</th>
+                    <th>Priority</th>
+                    <th>Risk</th>
+                    <th>Primary</th>
+                    <th>Secondary</th>
+                    <th>Retry (sec)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Filled by JavaScript -->
+            </tbody>
+        </table>
+        <p class="small-text">Note: This is simple in-memory data. No real database is used.</p>
+    </div>
+
+    <!--  SIMULATE SECTION  -->
+    <div id="simulateSection" class="section">
+        <h2>Simulate Events</h2>
+        <p class="small-text">
+            Select an event and user, then click "Trigger Event" to generate a notification.
+        </p>
+
+        <label>
+            Select Event:
+            <select id="simulateEventSelect">
+                <!-- Filled by JavaScript -->
+            </select>
+        </label>
+
+        <label>
+            Select User:
+            <select id="simulateUserSelect">
+                <option value="1">Nikunja Baruah (Account XXXX1234)</option>
+            </select>
+        </label>
+
+        <label>
+            Amount (for transaction type events):
+            <input type="text" id="simulateAmount" placeholder="Example: 5000.00">
+        </label>
+
+        <label>
+            Simulate SMS Failure?
+            <select id="simulateFailure">
+                <option value="no">No (success)</option>
+                <option value="yes">Yes (force fallback)</option>
+            </select>
+        </label>
+
+        <br><br>
+        <button onclick="simulateEvent()">Trigger Event</button>
+
+        <div class="log-box" id="simulateLog">
+            No events triggered yet.
+        </div>
+    </div>
+
+    <!--  CUSTOMER SECTION  -->
+    <div id="customerSection" class="section">
+        <h2>Customer - Trusted Notification Center</h2>
+        <p class="small-text">
+            This acts like a secure inbox inside the banking app where the customer can check genuine messages.
+        </p>
+
+        <p><strong>Customer:</strong> Nikunja Baruah</p>
+        <p><strong>Account:</strong> XXXX1234</p>
+        <p><strong>Security Phrase:</strong>black milk</p>
+
+        <button class="button-small" onclick="markAllRead()">Mark all as read</button>
+
+        <h3>Notifications</h3>
+        <div class="notification-list" id="notificationList">
+            <!-- Filled by JavaScript -->
+        </div>
+
+        <h3>Selected Notification Detail</h3>
+        <div class="notification-detail" id="notificationDetail">
+            Click on a notification from the list to view details and trust markers.
+        </div>
+
+       
+    </div>
+
+</div>
+
+<script>
+    // ---------------------------
+    // Simple in-memory data
+    // ---------------------------
+
+    // Only one demo user
+    var user = {
+        id: 1,
+        name: "Nikunja Baruah",
+        maskedAccount: "XXXX1234",
+        securityPhrase: "black milk"
+    };
+
+    // Predefined events (you can add more from admin form)
+    var events = [
+        {
+            id: 1,
+            name: "Login OTP",
+            priority: "High",
+            riskLevel: "High",
+            primaryChannel: "SMS",
+            secondaryChannel: "PUSH",
+            retrySeconds: 30
+        },
+        {
+            id: 2,
+            name: "High Value Debit",
+            priority: "High",
+            riskLevel: "High",
+            primaryChannel: "SMS",
+            secondaryChannel: "EMAIL",
+            retrySeconds: 60
+        },
+        {
+            id: 3,
+            name: "Promotional Offer",
+            priority: "Low",
+            riskLevel: "Low",
+            primaryChannel: "PUSH",
+            secondaryChannel: "",
+            retrySeconds: ""
+        }
+    ];
+
+    var nextEventId = 4;
+
+    // Notifications generated by simulation
+    var notifications = []; // {id, eventId, title, message, channelUsed, status, createdAt, isRead}
+
+    var nextNotificationId = 1;
+
+    // ---------------------------
+    // Helper: show/hide sections
+    // ---------------------------
+    function showSection(sectionId) {
+        var sections = document.getElementsByClassName("section");
+        for (var i = 0; i < sections.length; i++) {
+            sections[i].classList.remove("active");
+        }
+        document.getElementById(sectionId).classList.add("active");
+    }
+
+    
+    // Render Events Table
+    
+    function renderEventsTable() {
+        var tbody = document.getElementById("eventsTable").getElementsByTagName("tbody")[0];
+        tbody.innerHTML = "";
+
+        for (var i = 0; i < events.length; i++) {
+            var ev = events[i];
+            var row = "<tr>" +
+                "<td>" + ev.name + "</td>" +
+                "<td>" + ev.priority + "</td>" +
+                "<td>" + ev.riskLevel + "</td>" +
+                "<td>" + ev.primaryChannel + "</td>" +
+                "<td>" + (ev.secondaryChannel || "-") + "</td>" +
+                "<td>" + (ev.retrySeconds || "-") + "</td>" +
+                "</tr>";
+            tbody.innerHTML += row;
+        }
+
+        // Also update the simulate event dropdown
+        renderSimulateEventDropdown();
+    }
+
+    
+    // Add or Update Event (by name)
+    
+    function addOrUpdateEvent() {
+        var name = document.getElementById("eventName").value.trim();
+        var priority = document.getElementById("priority").value;
+        var riskLevel = document.getElementById("riskLevel").value;
+        var primaryChannel = document.getElementById("primaryChannel").value;
+        var secondaryChannel = document.getElementById("secondaryChannel").value;
+        var retrySecondsText = document.getElementById("retrySeconds").value.trim();
+        var retrySeconds = retrySecondsText ? parseInt(retrySecondsText) : "";
+
+        if (name === "") {
+            alert("Please enter event name.");
+            return;
+        }
+
+        // Check if event already exists with same name
+        var found = false;
+        for (var i = 0; i < events.length; i++) {
+            if (events[i].name.toLowerCase() === name.toLowerCase()) {
+                events[i].priority = priority;
+                events[i].riskLevel = riskLevel;
+                events[i].primaryChannel = primaryChannel;
+                events[i].secondaryChannel = secondaryChannel;
+                events[i].retrySeconds = retrySeconds;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            var newEvent = {
+                id: nextEventId++,
+                name: name,
+                priority: priority,
+                riskLevel: riskLevel,
+                primaryChannel: primaryChannel,
+                secondaryChannel: secondaryChannel,
+                retrySeconds: retrySeconds
+            };
+            events.push(newEvent);
+        }
+
+        // Clear the form
+        document.getElementById("eventName").value = "";
+        document.getElementById("priority").value = "High";
+        document.getElementById("riskLevel").value = "High";
+        document.getElementById("primaryChannel").value = "SMS";
+        document.getElementById("secondaryChannel").value = "";
+        document.getElementById("retrySeconds").value = "";
+
+        renderEventsTable();
+    }
+
+    
+    // Simulate Events
+    
+    function renderSimulateEventDropdown() {
+        var select = document.getElementById("simulateEventSelect");
+        select.innerHTML = "";
+        for (var i = 0; i < events.length; i++) {
+            var ev = events[i];
+            var option = document.createElement("option");
+            option.value = ev.id;
+            option.text = ev.name + " (" + ev.priority + ")";
+            select.appendChild(option);
+        }
+    }
+
+    function simulateEvent() {
+        if (events.length === 0) {
+            alert("No events configured.");
+            return;
+        }
+
+        var eventId = parseInt(document.getElementById("simulateEventSelect").value);
+        var amount = document.getElementById("simulateAmount").value.trim();
+        var simulateFailure = document.getElementById("simulateFailure").value;
+
+        var ev = null;
+        for (var i = 0; i < events.length; i++) {
+            if (events[i].id === eventId) {
+                ev = events[i];
+                break;
+            }
+        }
+
+        if (ev == null) {
+            alert("Event not found.");
+            return;
+        }
+
+        var now = new Date();
+        var title = ev.name;
+        var message = "";
+        // Simple message creation
+        var lowerName = ev.name.toLowerCase();
+        if (lowerName.indexOf("otp") !== -1) {
+            var otp = Math.floor(100000 + Math.random() * 900000);
+            message = "Your App Login OTP is " + otp + ". Do not share with anyone.";
+        } else if (lowerName.indexOf("debit") !== -1 || lowerName.indexOf("transaction") !== -1) {
+            var amountText = amount !== "" ? amount : "5000.00";
+            message = "A debit of ₹" + amountText + " has been made from account " + user.maskedAccount + ".";
+        } else if (lowerName.indexOf("offer") !== -1) {
+            message = "Exclusive bank offer on your account " + user.maskedAccount + ".";
+        } else {
+            message = "A " + ev.name + " event occurred on your account " + user.maskedAccount + ".";
+        }
+
+        // Decide channel used
+        var channelUsed = ev.primaryChannel;
+        var status = "SENT";
+        var logMessage = "Event \"" + ev.name + "\" triggered. Primary channel: " + ev.primaryChannel + ". ";
+
+        if (simulateFailure === "yes") {
+            if (ev.secondaryChannel && ev.secondaryChannel !== "") {
+                channelUsed = ev.secondaryChannel;
+                logMessage += "Primary failed. Fallback to: " + ev.secondaryChannel + ".";
+            } else {
+                status = "FAILED";
+                logMessage += "Primary failed. No fallback channel configured.";
+            }
+        } else {
+            logMessage += "Delivered via primary channel.";
+        }
+
+        var notification = {
+            id: nextNotificationId++,
+            eventId: ev.id,
+            title: title,
+            message: message,
+            channelUsed: channelUsed,
+            status: status,
+            createdAt: now,
+            isRead: false
+        };
+
+        // Add new notification at top
+        notifications.unshift(notification);
+
+        document.getElementById("simulateLog").innerHTML =
+            now.toLocaleString() + " - " + logMessage;
+
+        // Switch to customer view to see it
+        showSection("customerSection");
+        renderNotificationList();
+    }
+
+    
+    // Customer Notification Center
+    
+    function renderNotificationList() {
+        var listDiv = document.getElementById("notificationList");
+        listDiv.innerHTML = "";
+
+        if (notifications.length === 0) {
+            listDiv.innerHTML = "<p>No notifications yet.</p>";
+            document.getElementById("notificationDetail").innerHTML =
+                "Click on a notification from the list to view details.";
+            return;
+        }
+
+        for (var i = 0; i < notifications.length; i++) {
+            var n = notifications[i];
+            var line = document.createElement("div");
+            line.className = "notification-item";
+            line.setAttribute("data-id", n.id);
+            var statusText = n.isRead ? "Read" : "New";
+            line.innerHTML = "<strong>" + n.title + "</strong> (" + statusText + ")<br>" +
+                "<span class='small-text'>" + n.createdAt.toLocaleString() +
+                " | Channel: " + (n.channelUsed || "-") + " | Status: " + n.status + "</span>";
+            line.onclick = function () {
+                var id = parseInt(this.getAttribute("data-id"));
+                showNotificationDetail(id);
+            };
+            listDiv.appendChild(line);
+        }
+    }
+
+    function showNotificationDetail(id) {
+        var n = null;
+        for (var i = 0; i < notifications.length; i++) {
+            if (notifications[i].id === id) {
+                n = notifications[i];
+                notifications[i].isRead = true;
+                break;
+            }
+        }
+
+        if (n == null) {
+            return;
+        }
+
+        renderNotificationList(); // refresh list to update "Read" label
+
+        var ev = null;
+        for (var j = 0; j < events.length; j++) {
+            if (events[j].id === n.eventId) {
+                ev = events[j];
+                break;
+            }
+        }
+
+        var detailDiv = document.getElementById("notificationDetail");
+        var html = "";
+        html += "<p><strong>Title:</strong> " + n.title + "</p>";
+        html += "<p><strong>Time:</strong> " + n.createdAt.toLocaleString() + "</p>";
+        html += "<p><strong>Message:</strong> " + n.message + "</p>";
+        html += "<hr>";
+        html += "<p><strong>Trust Markers:</strong></p>";
+        html += "<p>Account: " + user.maskedAccount + "</p>";
+        html += "<p>Security Phrase: " + user.securityPhrase + "</p>";
+        html += "<p>Customer Name: " + user.name + "</p>";
+        html += "<hr>";
+        if (ev != null) {
+            html += "<p><strong>Event Details:</strong></p>";
+            html += "<p>Event Name: " + ev.name + "</p>";
+            html += "<p>Priority: " + ev.priority + "</p>";
+            html += "<p>Risk Level: " + ev.riskLevel + "</p>";
+            html += "<p>Primary Channel: " + ev.primaryChannel + "</p>";
+            html += "<p>Secondary Channel: " + (ev.secondaryChannel || "None") + "</p>";
+            html += "<p>Retry After: " + (ev.retrySeconds || "No retry") + " seconds</p>";
+        }
+        html += "<hr>";
+        
+
+        detailDiv.innerHTML = html;
+    }
+
+    function markAllRead() {
+        for (var i = 0; i < notifications.length; i++) {
+            notifications[i].isRead = true;
+        }
+        renderNotificationList();
+    }
+
+    
+    // Initial setup
+    
+    renderEventsTable();
+    renderSimulateEventDropdown();
+    renderNotificationList();
+</script>
+
+</body>
+</html>
